@@ -9,17 +9,17 @@ import ballerina/mime;
 import ballerina/regex;
 import ballerina/jwt;
 
-// configurable string password = ?;
-// configurable string host = ?;
-// configurable int port = ?;
-// configurable string username = ?;
-// string db = "defaultdb";
+configurable string password = ?;
+configurable string host = ?;
+configurable int port = ?;
+configurable string username = ?;
+string db = "defaultdb";
 
-string password = "rootroot";
-string host = localhost;
-int port = 3306;
-string username = root;
-string db = "ecomdb";
+// string password = "rootroot";
+// string host = localhost;
+// int port = 3306;
+// string username = root;
+// string db = "ecomdb";
 
 
 type Item record {
