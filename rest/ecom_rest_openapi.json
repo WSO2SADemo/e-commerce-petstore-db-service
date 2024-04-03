@@ -1,11 +1,19 @@
 {
   "openapi" : "3.0.1",
   "info" : {
-    "title" : "Ecom Rest",
-    "version" : "0.1.0"
+    "title" : "EcomRest",
+    "version" : "0.1.1"
   },
   "servers" : [ {
-    "url" : "https://abc077f4-ae13-410a-b510-ccadb5e0dca4-dev.e1-us-east-azure.choreoapis.dev/kgbt/ecombellerinadbservice/ecom-rest-702/v1.0/"
+    "url" : "https://abc077f4-ae13-410a-b510-ccadb5e0dca4-dev.e1-us-east-azure.choreoapis.dev/zorz/rest/ecom-rest-702/v1.0",
+    "variables" : {
+      "server" : {
+        "default" : "http://localhost"
+      },
+      "port" : {
+        "default" : "9091"
+      }
+    }
   } ],
   "paths" : {
     "/menu" : {

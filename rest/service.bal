@@ -5,26 +5,25 @@ import ballerinax/mysql;
 import ballerinax/mysql.driver as _;
 import ballerina/http;
 import ballerina/log;
-import ballerina/mime;
 import ballerina/regex;
 import ballerina/jwt;
+import ballerina/mime;
 
-configurable string password = ?;
-configurable string host = ?;
-configurable int port = ?;
-configurable string username = ?;
-string db = "defaultdb";
+// configurable string password = ?;
+// configurable string host = ?;
+// configurable int port = ?;
+// configurable string username = ?;
+// string db = "defaultdb";
 
-// string password = "rootroot";
-// string host = localhost;
-// int port = 3306;
-// string username = root;
-// string db = "ecomdb";
+string password = "rootroot";
+string host = "localhost";
+int port = 3306;
+string username = "root";
+string db = "ecomdb";
 
 
 type Item record {
     string ID;
-
     string Title;
     string Description;
     string Includes;
@@ -33,6 +32,13 @@ type Item record {
     string Material;
     float Price;
     string sellerId;
+};
+
+type Department record {
+    string id;
+    string name;
+    string location;
+    string manager;
 };
 
 type DeliveryStatusItem record {
@@ -90,6 +96,7 @@ service /ecom/rest on new http:Listener(9091) {
             self.dbClient = check new (host = host, user = username, password = password, database = db, port = port, connectionPool = {maxOpenConnections: 3});
         } on fail var e {
             log:printError("Error occurred while connecting to MySQL", e);
+            return e;
         }
         log:printInfo("Connected to database !");
     }
@@ -517,4 +524,61 @@ service /ecom/rest on new http:Listener(9091) {
         return "Exception occurred when converting the id from query param.";
     }
 
+    resource function get item(int itemId) returns Item|ErrorRecord {
+        io:println("item() called: ");
+        
+        Item item = {Includes: "", IntendedFor: "", Description: "", sellerId: "", Price: 0.0, Color: "", Title: "", Material: "", ID: ""};
+        do {
+            // mysql:Client mysqlClients = check new ("sahackathon.mysql.database.azure.com", "choreo", "wso2!234", "db_name", 3306, connectionPool={maxOpenConnections: 3});
+            if (self.dbClient is jdbc:Client) {
+                do {
+                    // sql:ExecutionResult createTableResult = check self.dbClient->execute(`SELECT * FROM itemtable`);
+                    io:println("DBClient OK: ");
+                    sql:ParameterizedQuery query;
+                    io:println(itemId);
+                    query = `SELECT * from itemtable where id = ${itemId}`;
+                    io:println(query);
+                    stream<Item, sql:Error?> resultStream = self.dbClient->query(query);
+
+                    check from Item tempItem in resultStream
+                        do {
+                            item = tempItem;
+                        };
+                } on fail var e {
+                    io:println("Exception occurred when inserting. ", e);
+                }
+            } 
+            io:println(item);
+            return item;
+        }
+    }
+
+    resource function get department(string departmentName) returns Department|ErrorRecord {
+        io:println("item() called: ");
+        
+        Department department = {manager: "", name: "", location: "", id: ""};
+        do {
+            // mysql:Client mysqlClients = check new ("sahackathon.mysql.database.azure.com", "choreo", "wso2!234", "db_name", 3306, connectionPool={maxOpenConnections: 3});
+            if (self.dbClient is jdbc:Client) {
+                do {
+                    // sql:ExecutionResult createTableResult = check self.dbClient->execute(`SELECT * FROM itemtable`);
+                    io:println("DBClient OK: ");
+                    sql:ParameterizedQuery query;
+                    io:println(departmentName);
+                    query = `SELECT * from departmentTable where name = ${departmentName}`;
+                    io:println(query);
+                    stream<Department, sql:Error?> resultStream = self.dbClient->query(query);
+
+                    check from Department tempDepartment in resultStream
+                        do {
+                            department = tempDepartment;
+                        };
+                } on fail var e {
+                    io:println("Exception occurred when inserting. ", e);
+                }
+            } 
+            io:println(department);
+            return department;
+        }
+    }
 }

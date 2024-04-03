@@ -1,4 +1,4 @@
-[settings]
-  buildImage = false
-  thinJar = false
-
+[container.image]
+repository="ramilu90"
+name="ecombackend"
+tag="v1.0.0"
