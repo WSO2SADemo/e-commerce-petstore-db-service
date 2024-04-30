@@ -9,17 +9,11 @@ import ballerina/regex;
 import ballerina/jwt;
 import ballerina/mime;
 
-// configurable string password = ?;
-// configurable string host = ?;
-// configurable int port = ?;
-// configurable string username = ?;
-// string db = "defaultdb";
-
-string password = "rootroot";
-string host = "localhost";
-int port = 3306;
-string username = "root";
-string db = "ecomdb";
+configurable string password = "rootroot";
+configurable string host = "localhost";
+configurable int port = 3306;
+configurable string username = "root";
+string db = "defaultdb";
 
 
 type Item record {
@@ -124,8 +118,82 @@ service /ecom/rest on new http:Listener(9091) {
         string base64EncodedSignature = split_string[2]; // Signature
         string? decodedHeader = self.decode(base64EncodedHeader);
         string? decodedBody =  self.decode(base64EncodedBody);
+        io:println("header: ");
         io:println(decodedHeader);
+        io:println("body");
         io:println(decodedBody);
+    }
+
+    resource function get items(http:Headers headers, string sellerId) returns Item[]|ErrorRecord {
+        io:println("items() called: ");
+        io:println("Printing headers !!");
+        // io:println(headers.getHeaders("X-JWT-Assertion"));
+        string[]|error jwtArray = headers.getHeaders("X-JWT-Assertion");
+        string[] headerNames = headers.getHeaderNames();
+        io:println(headerNames);
+        string[]|error usernameid = headers.getHeaders("usernameid");
+        io:println(usernameid);
+        if (jwtArray is string[]) {
+            string jwt = jwtArray[0];
+            // io:println(jwt);
+            jwt:ValidatorConfig validatorConfig = {
+                issuer: "wso2.org/products/am",
+                // audience: "EtKG7RgMr9Q_TFmWOxrdan1toVIa",
+                clockSkew: 60,
+                signatureConfig: {
+                    certFile: "/Users/ramindu/wso2/general_demo/APIM-IS/wso2carbon.cer"
+                }
+            };
+            do {
+	            jwt:Payload result = check jwt:validate(jwt, validatorConfig);
+                io:println("printing JWT related Info !!");
+                io:println(result);
+                io:println("Done printing JWT related Info !!");
+            } on fail var e {
+            	io:println("Error occurred when validating backend jwt", e);
+            }
+            
+        }
+
+        var sellerIdInteger = int:fromString(sellerId);
+        if (sellerIdInteger is int) {
+            if (sellerIdInteger != -1) {
+                return {body: { message: "Exception ocurred when reading sellerId" }};
+            }
+        } 
+        
+        Item[] items = [];
+        do {
+            // mysql:Client mysqlClients = check new ("sahackathon.mysql.database.azure.com", "choreo", "wso2!234", "db_name", 3306, connectionPool={maxOpenConnections: 3});
+            if (self.dbClient is jdbc:Client) {
+                do {
+                    // sql:ExecutionResult createTableResult = check self.dbClient->execute(`SELECT * FROM itemtable`);
+                    io:println("DBClient OK: ");
+                    sql:ParameterizedQuery query;
+                    io:println("sellerId : " + sellerId);
+                    if (sellerId == "-1") {
+                        query = `SELECT * from itemtable`;
+                    } else {
+                        query = `SELECT * from itemtable where sellerId = ${sellerId}`;
+                    }
+                    io:println(query);
+                    stream<Item, sql:Error?> resultStream = self.dbClient->query(query);
+
+                    check from Item item in resultStream
+                        do {
+                            io:println("adding item: ", item);
+                            items.push(item);
+                        };
+                } on fail var e {
+                    io:println("Exception occurred when inserting. ", e);
+                }
+            } else {
+                
+                
+            }
+            io:println(items);
+            return items;
+        }
     }
     
     resource function post item(@http:Payload map<json> jsonString) returns string {
@@ -419,78 +487,6 @@ service /ecom/rest on new http:Listener(9091) {
         // Item item = {Title: "entry.Title", Description: "entry.Description", Includes: "entry.Includes", IntendedFor: "entry.IntendedFor", Color: "entry.Color", Material: "entry.Material", Price: 12.23};
         // return new ItemData(item);
         return "execption ocurrec when updating or adding the product";
-    }
-
-    resource function get items(http:Headers headers, string sellerId) returns Item[]|ErrorRecord {
-        io:println("items() called: ");
-        io:println("Printing headers !!");
-        // io:println(headers.getHeaders("X-JWT-Assertion"));
-        string[]|error jwtArray = headers.getHeaders("X-JWT-Assertion");
-        string[] headerNames = headers.getHeaderNames();
-        io:println(headerNames);
-        string[]|error usernameid = headers.getHeaders("usernameid");
-        io:println(usernameid);
-        if (jwtArray is string[]) {
-            string jwt = jwtArray[0];
-            // io:println(jwt);
-            jwt:ValidatorConfig validatorConfig = {
-                issuer: "wso2.org/products/am",
-                // audience: "EtKG7RgMr9Q_TFmWOxrdan1toVIa",
-                clockSkew: 60,
-                signatureConfig: {
-                    certFile: "/Users/ramindu/wso2/sa/customer/general_demo/APIM-IS/wso2carbon.cer"
-                }
-            };
-            do {
-	            jwt:Payload result = check jwt:validate(jwt, validatorConfig);
-                io:println("printing JWT related Info !!");
-                io:println(result);
-                io:println("Done printing JWT related Info !!");
-            } on fail var e {
-            	io:println("Error occurred when validating backend jwt", e);
-            }
-            
-        }
-
-        var sellerIdInteger = int:fromString(sellerId);
-        if (sellerIdInteger is int) {
-            if (sellerIdInteger != -1) {
-                return {body: { message: "Exception ocurred when reading sellerId" }};
-            }
-        } 
-        
-        Item[] items = [];
-        do {
-            // mysql:Client mysqlClients = check new ("sahackathon.mysql.database.azure.com", "choreo", "wso2!234", "db_name", 3306, connectionPool={maxOpenConnections: 3});
-            if (self.dbClient is jdbc:Client) {
-                do {
-                    // sql:ExecutionResult createTableResult = check self.dbClient->execute(`SELECT * FROM itemtable`);
-                    io:println("DBClient OK: ");
-                    sql:ParameterizedQuery query;
-                    io:println("sellerId : " + sellerId);
-                    if (sellerId == "-1") {
-                        query = `SELECT * from itemtable`;
-                    } else {
-                        query = `SELECT * from itemtable where sellerId = ${sellerId}`;
-                    }
-                    io:println(query);
-                    stream<Item, sql:Error?> resultStream = self.dbClient->query(query);
-
-                    check from Item item in resultStream
-                        do {
-                            io:println("adding item: ", item);
-                            items.push(item);
-                        };
-                } on fail var e {
-                    io:println("Exception occurred when inserting. ", e);
-                }
-            } else {
-                
-                
-            }
-            io:println(items);
-            return items;
-        }
     }
 
     resource function delete item(string idstring) returns string {
